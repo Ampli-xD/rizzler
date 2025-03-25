@@ -76,12 +76,6 @@ async def rizz_image(text: str):
     
     response = FileResponse(image_path, media_type="image/png")
     
-    # Delete the image after sending response
-    try:
-        os.remove(image_path)
-    except Exception as e:
-        print(f"Error deleting file: {e}")
-
     return response
 
 if __name__ == "__main__":
