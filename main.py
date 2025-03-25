@@ -19,10 +19,20 @@ def generate_image(text: str) -> str:
     draw = ImageDraw.Draw(img)
     wrapped_text = textwrap.fill(text, width=30)
     
-    # Center text
-    text_width = draw.textlength(wrapped_text, font=font)
-    x = (800 - text_width) / 2
-    draw.text((x, 150), wrapped_text, font=font, fill=(255, 255, 255))  # White text
+    # Calculate text position for multiline text
+    lines = wrapped_text.split('\n')
+    total_height = sum(font.getbbox(line)[3] - font.getbbox(line)[1] for line in lines)
+    y = (400 - total_height) // 2
+    
+    for line in lines:
+        # Get text width for current line
+        bbox = font.getbbox(line)
+        text_width = bbox[2] - bbox[0]
+        x = (800 - text_width) // 2
+        
+        # Draw each line
+        draw.text((x, y), line, font=font, fill=(255, 255, 255))
+        y += font.getbbox(line)[3] - font.getbbox(line)[1] + 5  # Add line spacing
     
     image_path = "rizz.png"
     img.save(image_path)
@@ -45,7 +55,6 @@ async def generate_rizz(request: Request):
     rizz_line = chat_completion.choices[0].message.content
     image_path = generate_image(rizz_line)
     
-    # Return HTML with only image in meta tags
     return f"""
     <!DOCTYPE html>
     <html prefix="og: https://ogp.me/ns#">
@@ -53,20 +62,21 @@ async def generate_rizz(request: Request):
         <meta property="og:title" content="Rizz Generator" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="{request.url}" />
-        <meta property="og:image" content="{request.url_for('rizz_image')}?text={rizz_line}" />
+        <meta property="og:image" content="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}" />
         <meta property="og:image:width" content="800" />
         <meta property="og:image:height" content="400" />
     </head>
-    <body style="margin:0">
-        <img src="{request.url_for('rizz_image')}?text={rizz_line}" width="100%" />
+    <body style="margin:0;background:#000">
+        <img src="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}" width="100%" />
     </body>
     </html>
     """
 
 @app.get("/image")
 async def rizz_image(text: str):
-    image_path = generate_image(text)
-    return FileResponse(image_path)
+    decoded_text = text.replace('+', ' ')
+    image_path = generate_image(decoded_text)
+    return FileResponse(image_path, media_type="image/png")
 
 if __name__ == "__main__":
     import uvicorn
