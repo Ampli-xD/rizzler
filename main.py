@@ -4,7 +4,6 @@ from groq import Groq
 from PIL import Image, ImageDraw, ImageFont
 import os
 import textwrap
-import time
 
 app = FastAPI()
 client = Groq(api_key=os.environ["GROQAPIKEY"])
@@ -35,38 +34,36 @@ def generate_image(text: str) -> str:
     img.save(image_path)
     return image_path
 
-
 @app.get("/", response_class=HTMLResponse)
 async def generate_rizz(request: Request):
-    topic = next(iter(request.query_params), "random")
-
-    try:
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"Generate a {topic} pickup line. Keep it under 20 words. say nothing more nothing less only the pickup line!",
-                }
-            ],
-            model="llama3-70b-8192",
-        )
-        rizz_line = chat_completion.choices[0].message.content
-    except (IndexError, AttributeError):
-        rizz_line = "You're hotter than a server running 24/7."
-
+    topic = list(request.query_params.keys())[0] if request.query_params else "random"
+    
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": f"Generate a {topic} pickup line. Keep it under 20 words. Say nothing more, nothing less—only the pickup line!",
+            }
+        ],
+        model="llama3-70b-8192",
+    )
+    
+    rizz_line = chat_completion.choices[0].message.content
+    image_path = generate_image(rizz_line)
+    
     return f"""
     <!DOCTYPE html>
     <html prefix="og: https://ogp.me/ns#">
     <head>
         <meta property="og:title" content=" " />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="{request.base_url}" />
-        <meta property="og:image" content="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}&ts={int(time.time())}" />
+        <meta property="og:url" content=" " />
+        <meta property="og:image" content="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}" />
         <meta property="og:image:width" content="800" />
         <meta property="og:image:height" content="400" />
     </head>
     <body style="margin:0;background:#000">
-        <img src="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}&ts={int(time.time())}" width="100%" />
+        <img src="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}" width="100%" />
     </body>
     </html>
     """
@@ -78,7 +75,7 @@ async def rizz_image(text: str):
     
     response = FileResponse(image_path, media_type="image/png")
     
-    # Schedule file deletion after the response is sent
+    # Delete the image after sending response
     try:
         os.remove(image_path)
     except Exception as e:
