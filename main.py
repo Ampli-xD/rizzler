@@ -29,11 +29,10 @@ async def generate_rizz(request: Request):
     <html prefix="og: https://ogp.me/ns#">
     <head>
         <title>Rizz Generator</title>
-        <meta property="og:title" content="{topic.capitalize()} Rizz" />
-        <meta property="og:description" content="{rizz_line}" />
+        <meta property="og:title" content="{rizz_line.capitalize()} Rizz" />
+        <meta property="og:description" content="{topic}" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="{request.url}" />
-        <meta property="og:image" content="https://via.placeholder.com/600x400/000000/FFFFFF?text={rizz_line[:20]}" />
+        
     </head>
     <body>
         <h1>{rizz_line}</h1>
