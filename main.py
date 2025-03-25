@@ -5,7 +5,7 @@ from groq import Groq
 
 app = FastAPI()
 
-client = Groq(api_key=os.environ["GROQAPIKEY"]
+client = Groq(api_key=os.environ["GROQAPIKEY"])
 
 @app.get("/", response_class=HTMLResponse)
 async def generate_rizz(request: Request):
