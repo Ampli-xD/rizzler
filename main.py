@@ -4,70 +4,70 @@ from groq import Groq
 from PIL import Image, ImageDraw, ImageFont
 import os
 import textwrap
+import time
 
 app = FastAPI()
 client = Groq(api_key=os.environ["GROQAPIKEY"])
 
-def generate_image(text: str) -> str:
-    """Generate meme-style image with text"""
-    img = Image.new('RGB', (800, 400), color=(0, 0, 0))  # Black background
+def get_font(size=40):
     try:
-        font = ImageFont.truetype("arial.ttf", 40)
-    except:
-        font = ImageFont.load_default()
+        return ImageFont.truetype("arial.ttf", size)
+    except IOError:
+        return ImageFont.load_default()
+
+def generate_image(text: str) -> str:
+    """Generate meme-style image with text."""
+    img = Image.new('RGB', (800, 400), color=(0, 0, 0))  # Black background
+    font = get_font(40)
     
     draw = ImageDraw.Draw(img)
     wrapped_text = textwrap.fill(text, width=30)
-    
-    # Calculate text position for multiline text
+
     lines = wrapped_text.split('\n')
-    total_height = sum(font.getbbox(line)[3] - font.getbbox(line)[1] for line in lines)
+    total_height = sum(font.getsize(line)[1] for line in lines)
     y = (400 - total_height) // 2
-    
+
     for line in lines:
-        # Get text width for current line
-        bbox = font.getbbox(line)
-        text_width = bbox[2] - bbox[0]
+        text_width, text_height = font.getsize(line)
         x = (800 - text_width) // 2
-        
-        # Draw each line
         draw.text((x, y), line, font=font, fill=(255, 255, 255))
-        y += font.getbbox(line)[3] - font.getbbox(line)[1] + 5  # Add line spacing
-    
+        y += text_height + 5  # Line spacing
+
     image_path = "rizz.png"
     img.save(image_path)
     return image_path
 
 @app.get("/", response_class=HTMLResponse)
 async def generate_rizz(request: Request):
-    topic = list(request.query_params.keys())[0] if request.query_params else "random"
-    
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": f"Generate a {topic} pickup line. Keep it under 20 words.",
-            }
-        ],
-        model="llama3-70b-8192",
-    )
-    
-    rizz_line = chat_completion.choices[0].message.content
-    image_path = generate_image(rizz_line)
-    
+    topic = next(iter(request.query_params), "random")
+
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Generate a {topic} pickup line. Keep it under 20 words. say nothing more nothing less only the pickup line!",
+                }
+            ],
+            model="llama3-70b-8192",
+        )
+        rizz_line = chat_completion.choices[0].message.content
+    except (IndexError, AttributeError):
+        rizz_line = "You're hotter than a server running 24/7."
+
     return f"""
     <!DOCTYPE html>
     <html prefix="og: https://ogp.me/ns#">
     <head>
-        <meta property="og:title" content="Rizz Generator" />
+        <meta property="og:title" content=" " />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="{request.url}" />
-        <meta property="og:image" content="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}" />
+        <meta property="og:url" content="{request.base_url}" />
+        <meta property="og:image" content="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}&ts={int(time.time())}" />
         <meta property="og:image:width" content="800" />
         <meta property="og:image:height" content="400" />
     </head>
     <body style="margin:0;background:#000">
-        <img src="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}" width="100%" />
+        <img src="{request.url_for('rizz_image')}?text={rizz_line.replace(' ', '+')}&ts={int(time.time())}" width="100%" />
     </body>
     </html>
     """
