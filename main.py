@@ -16,26 +16,31 @@ def get_font(size=40):
         return ImageFont.load_default()
 
 def generate_image(text: str) -> str:
-    """Generate meme-style image with text."""
+    """Generate meme-style image with text"""
     img = Image.new('RGB', (800, 400), color=(0, 0, 0))  # Black background
-    font = get_font(40)
-    
-    draw = ImageDraw.Draw(img)
-    wrapped_text = textwrap.fill(text, width=30)
+    try:
+        font = ImageFont.truetype("arial.ttf", 60)  # Increased font size to 60
+    except:
+        font = ImageFont.load_default()  # Fallback font
 
+    draw = ImageDraw.Draw(img)
+    wrapped_text = textwrap.fill(text, width=20)  # Adjust wrapping for larger text
+
+    # Calculate text position for multiline text
     lines = wrapped_text.split('\n')
     total_height = sum(font.getsize(line)[1] for line in lines)
-    y = (400 - total_height) // 2
+    y = (400 - total_height) // 2  # Centering text vertically
 
     for line in lines:
         text_width, text_height = font.getsize(line)
-        x = (800 - text_width) // 2
+        x = (800 - text_width) // 2  # Centering text horizontally
         draw.text((x, y), line, font=font, fill=(255, 255, 255))
-        y += text_height + 5  # Line spacing
+        y += text_height + 5  # Adjust line spacing
 
     image_path = "rizz.png"
     img.save(image_path)
     return image_path
+
 
 @app.get("/", response_class=HTMLResponse)
 async def generate_rizz(request: Request):
@@ -76,7 +81,16 @@ async def generate_rizz(request: Request):
 async def rizz_image(text: str):
     decoded_text = text.replace('+', ' ')
     image_path = generate_image(decoded_text)
-    return FileResponse(image_path, media_type="image/png")
+    
+    response = FileResponse(image_path, media_type="image/png")
+    
+    # Schedule file deletion after the response is sent
+    try:
+        os.remove(image_path)
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+
+    return response
 
 if __name__ == "__main__":
     import uvicorn
