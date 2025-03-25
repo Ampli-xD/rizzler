@@ -9,12 +9,6 @@ import time
 app = FastAPI()
 client = Groq(api_key=os.environ["GROQAPIKEY"])
 
-def get_font(size=40):
-    try:
-        return ImageFont.truetype("arial.ttf", size)
-    except IOError:
-        return ImageFont.load_default()
-
 def generate_image(text: str) -> str:
     """Generate meme-style image with text"""
     img = Image.new('RGB', (800, 400), color=(0, 0, 0))  # Black background
