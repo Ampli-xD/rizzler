@@ -21,11 +21,12 @@ def generate_image(text: str) -> str:
 
     # Calculate text position for multiline text
     lines = wrapped_text.split('\n')
-    total_height = sum(font.getsize(line)[1] for line in lines)
+    total_height = sum(font.getbbox(line)[3] - font.getbbox(line)[1] for line in lines)
     y = (400 - total_height) // 2  # Centering text vertically
 
     for line in lines:
-        text_width, text_height = font.getsize(line)
+        text_width = font.getbbox(line)[2] - font.getbbox(line)[0]
+        text_height = font.getbbox(line)[3] - font.getbbox(line)[1]
         x = (800 - text_width) // 2  # Centering text horizontally
         draw.text((x, y), line, font=font, fill=(255, 255, 255))
         y += text_height + 5  # Adjust line spacing
